@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>Verify Your Email</h2>
+      <p>We sent a 6-digit code to <strong>{{ email }}</strong></p>
+    </div>
+    
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    
+    <form method="post" action="/verify">
+      <input type="hidden" name="email" value="{{ email }}">
+      
+      <label>6-Digit Code</label>
+      <input name="code" type="text" required placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 5px;">
+
+      <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Verify Account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

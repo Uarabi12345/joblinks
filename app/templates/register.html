@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>Create Account</h2>
+      <p>Join JobLinks and start earning today</p>
+    </div>
+    
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    
+    <form method="post" action="/register">
+      <label>Email</label>
+      <input name="email" type="email" required placeholder="you@example.com">
+
+      <label>Password</label>
+      <input name="password" type="password" required minlength="6" placeholder="Create a strong password">
+
+      <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Register Free</button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 20px; font-size: 14px; color: #64748b;">
+      Already have an account? <a href="/login" style="color: #6366f1; font-weight: bold;">Login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

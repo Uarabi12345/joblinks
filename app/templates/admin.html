@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding: 40px 20px; margin-top: 10px;">
+  <span class="badge">👑 Admin Command Center</span>
+  <h1 style="font-size: 32px; margin-bottom: 10px;">Manage Your Platform</h1>
+  <p class="hero-sub" style="font-size: 16px;">Approve payments, post new jobs, and start new batches.</p>
+  <div class="hero-stats" style="margin-top: 20px;">
+    <div class="stat"><strong>{{ links|length }}</strong><span>Jobs in Batch</span></div>
+    <div class="stat" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5);">
+      <strong>{{ pending_payments|length }}</strong><span>Pending Payments</span>
+    </div>
+    <div class="stat"><strong>#{{ current_batch }}</strong><span>Active Batch</span></div>
+  </div>
+</section>
+
+<main style="padding: 0;">
+  {% if pending_payments %}
+  <div class="card" style="border-left: 5px solid #ef4444; background: #fef2f2; margin-bottom: 30px; padding: 24px; border-radius: 16px;">
+    <h3 style="color: #991b1b; margin-top: 0;">⚠️ Pending Manual Payments</h3>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      {% for p in pending_payments %}
+        <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid #fecaca; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong style="color: #1e293b;">User ID: {{ p.user_id }} | Job ID: {{ p.job_link_id }}</strong>
+            <div style="font-family: monospace; background: #f1f5f9; padding: 5px 10px; border-radius: 5px; margin-top: 5px; font-size: 13px;">{{ p.message }}</div>
+          </div>
+          <form method="post" action="/admin/approve-payment/{{ p.id }}">
+            <button type="submit" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">✅ Approve</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ADD JOB -->
+  <div class="card" style="margin-bottom: 30px; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0;">➕ Add New Job to Batch #{{ current_batch }}</h3>
+    <form method="post" action="/admin/add" enctype="multipart/form-data">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+          <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px;">Job Title</label>
+          <input name="title" required placeholder="e.g. Chat with client" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+        </div>
+        <div>
+          <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px;">Upload Image from Device</label>
+          <input type="file" name="image_file" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: white;">
+          <span style="font-size: 12px; color: #64748b; display: block; margin-top: 5px;">OR paste an image URL below:</span>
+          <input name="image_url" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-top: 5px;">
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div>
+          <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #ef4444;">Unlock Fee (Worker Pays)</label>
+          <input name="unlock_fee" type="number" required placeholder="e.g. 100" value="100" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+          <span style="font-size: 12px; color: #64748b;">Amount in KES to unlock link</span>
+        </div>
+        <div>
+          <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #10b981;">Worker Payout (Worker Earns)</label>
+          <input name="payout_amount" type="text" required placeholder="e.g. 2000 KES or $20" value="1000 KES" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+          <span style="font-size: 12px; color: #64748b;">Amount they get from client</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px;">Real URL (Secret Link)</label>
+        <input name="real_url" type="url" required placeholder="https://wa.me/..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+      </div>
+      <div style="margin-top: 15px;">
+        <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 5px;">Description</label>
+        <textarea name="description" rows="2" placeholder="Details of the job..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;"></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="margin-top: 15px; width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">Publish Job to Board</button>
+    </form>
+  </div>
+
+  <!-- ACTIVE JOBS -->
+  <div class="card" style="margin-bottom: 30px; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0;">📋 Active Jobs (Batch #{{ current_batch }})</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+      {% for l in links %}
+        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            {% if l.image_url %}
+              <img src="{{ l.image_url }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+            {% endif %}
+            <div>
+              <strong>{{ l.title }}</strong>
+              <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                Payout: <span style="color: #10b981; font-weight: bold;">{{ l.payout_amount }}</span> | 
+                Unlock Fee: <span style="color: #ef4444; font-weight: bold;">{{ l.unlock_fee }} KES</span> | 
+                Status: <span style="font-weight: bold;">{{ l.status|upper }}</span>
+              </div>
+            </div>
+          </div>
+          <form method="post" action="/admin/delete/{{ l.id }}" onsubmit="return confirm('Delete this link?')">
+            <button type="submit" style="background: #fee2e2; color: #b91c1c; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Delete</button>
+          </form>
+        </div>
+      {% else %}
+        <p style="color: #64748b; text-align: center; padding: 20px;">No jobs in this batch yet. Add one above!</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- REGISTERED WORKERS -->
+  <div class="card" style="margin-bottom: 30px; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0;">👥 Registered Workers ({{ workers|length }})</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+      {% for w in workers %}
+        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong>{{ w.email }}</strong>
+          </div>
+          <form method="post" action="/admin/delete-user/{{ w.id }}" onsubmit="return confirm('Delete this user?')">
+            <button type="submit" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Remove</button>
+          </form>
+        </div>
+      {% else %}
+        <p style="color: #64748b; text-align: center; padding: 20px;">No workers registered yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- DANGER ZONE -->
+  <div class="card" style="border: 2px dashed #ef4444; background: #fff5f5; padding: 24px; border-radius: 16px;">
+    <h3 style="color: #991b1b; margin-top: 0;">🚨 Danger Zone: Archive Batch</h3>
+    <p style="color: #7f1d1d; font-size: 14px; margin-bottom: 15px;">
+      Start a fresh batch. Workers will need to pay the unlock fee for new jobs.
+    </p>
+    <form method="post" action="/admin/archive" onsubmit="return confirm('Archive this batch?')">
+      <button type="submit" style="background: #ef4444; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Archive & Start New Batch #{{ current_batch + 1 }}</button>
+    </form>
+  </div>
+</main>
+
+{% endblock %}

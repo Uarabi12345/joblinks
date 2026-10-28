@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  <span class="badge">🇰🇪 Kenya's #1 Micro-Job Platform</span>
+  <h1>Turn Your Phone Into <span class="gradient-text">Real Income</span></h1>
+  <p class="hero-sub">
+    Chat with real clients. Get paid real money. Unlock specific tasks with a small fee and earn big.
+  </p>
+  <div class="hero-cta">
+    {% if not user %}
+      <a href="/register" class="btn-primary">Get Started Free →</a>
+      <a href="/login" class="btn-ghost">I have an account</a>
+    {% else %}
+      <a href="#jobs" class="btn-primary">Browse Available Jobs →</a>
+    {% endif %}
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><strong>{{ available_jobs }}</strong><span>Jobs Open Now</span></div>
+    <div class="stat"><strong>Pay-Per-Task</strong><span>Flexible Unlocking</span></div>
+    <div class="stat"><strong>24/7</strong><span>Access Forever</span></div>
+  </div>
+</section>
+
+{% if user and my_claimed_jobs %}
+<section class="jobs-section" id="my-jobs" style="padding-top: 20px;">
+  <h2>My Claimed Jobs</h2>
+  <p class="section-sub">These jobs are locked to your account. Complete them to get paid.</p>
+  <div class="jobs-grid">
+    {% for link in my_claimed_jobs %}
+      <div class="job-card" style="border-color: #10b981; background: #ecfdf5;">
+        {% if link.image_url %}
+          <img src="{{ link.image_url }}" alt="Job Image" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; border: 1px solid #a7f3d0;">
+        {% endif %}
+        <div class="job-head">
+          <h3>{{ link.title }}</h3>
+        </div>
+        <p class="job-desc">{{ link.description }}</p>
+        <div class="url-revealed">
+          <span class="url-label">✅ Your job link:</span>
+          <a href="{{ link.real_url }}" target="_blank" rel="noopener" class="url-link">{{ link.real_url }}</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="how-it-works">
+  <h2>How It Works</h2>
+  <p class="section-sub">Three simple steps to your first payout</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Register Free</h3>
+      <p>Create your account in 30 seconds. No documents. No commitment.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Pick Your Task</h3>
+      <p>Browse jobs and see the exact Payout you'll earn. Pay only the small Unlock Fee to access it.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Claim & Earn</h3>
+      <p>Chat with clients. Get paid directly to your M-Pesa.</p>
+    </div>
+  </div>
+</section>
+
+<section class="jobs-section" id="jobs">
+  <h2>Batch #{{ current_batch }} — Available Jobs</h2>
+  <p class="section-sub">
+    {% if user %}
+      Choose a task, pay the unlock fee, and get the client's link instantly.
+    {% else %}
+      Register to see job links and unlock tasks.
+    {% endif %}
+  </p>
+
+  {% if not user %}
+    <div class="activation-banner">
+      <div>
+        <strong>👋 New here?</strong>
+        <p>Create a free account, then unlock jobs individually.</p>
+      </div>
+      <a href="/register" class="btn-primary">Register Free</a>
+    </div>
+  {% endif %}
+
+  <div class="jobs-grid">
+    {% for link in links %}
+      <div class="job-card {% if link.status == 'taken' %}taken{% endif %}">
+        {% if link.image_url %}
+          <img src="{{ link.image_url }}" alt="Job Image" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
+        {% endif %}
+        
+        <div class="job-head">
+          <h3>{{ link.title }}</h3>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap;">
+          <span style="background: #ecfdf5; color: #059669; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 14px;">
+            💰 Payout: {{ link.payout_amount }}
+          </span>
+          <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 14px;">
+            🔓 Unlock Fee: {{ link.unlock_fee }} KES
+          </span>
+        </div>
+
+        <p class="job-desc">{{ link.description }}</p>
+
+        <div class="job-url">
+          {% if user and link.taken_by == user.id %}
+            <div class="url-revealed">
+              <span class="url-label">✅ Your job link:</span>
+              <a href="{{ link.real_url }}" target="_blank" rel="noopener" class="url-link">{{ link.real_url }}</a>
+            </div>
+          {% elif link.status == 'taken' %}
+            <span class="badge-taken">🔒 Claimed by another user</span>
+          {% else %}
+            <div class="url-blurred">{{ link.real_url }}</div>
+          {% endif %}
+        </div>
+
+        {% if link.status == 'taken' and (not user or link.taken_by != user.id) %}
+          <button class="btn-disabled" disabled>Already Claimed</button>
+        {% elif user and link.taken_by == user.id %}
+          <button class="btn-primary" disabled style="background: #10b981; color: white;">Unlocked & Claimed</button>
+        {% elif user and link.status == 'available' %}
+          <button onclick="openPaymentModal({{ link.id }}, {{ link.unlock_fee }})" class="btn-primary">Pay {{ link.unlock_fee }} KES to Unlock</button>
+        {% else %}
+          <button onclick="window.location.href='/register'" class="btn-locked">🔒 Register to Unlock</button>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p>🚀 No jobs posted in this batch yet. Check back soon!</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="faq-section">
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-list">
+    <details>
+      <summary>How does the payment work?</summary>
+      <p>You pay a small "Unlock Fee" to access the client's contact link for a specific job. Once unlocked, the job is yours, and you keep 100% of the "Payout" amount the client gives you.</p>
+    </details>
+    <details>
+      <summary>Can two people claim the same job?</summary>
+      <p>No. Once a job is unlocked, it locks for everyone else. It's first come, first served.</p>
+    </details>
+    <details>
+      <summary>How do I get paid?</summary>
+      <p>Payment is arranged directly between you and the client after you claim the job. Most clients pay via M-Pesa within 24 hours.</p>
+    </details>
+  </div>
+</section>
+
+<div id="payment-modal" class="modal" style="display:none">
+  <div class="modal-content">
+    <h3>Unlock This Job</h3>
+    <p>We'll send an M-Pesa prompt to your phone to pay the unlock fee.</p>
+    <input id="mpesa-phone" placeholder="07XXXXXXXX or 2547XXXXXXXX" autocomplete="tel">
+    <div class="modal-actions">
+      <button onclick="closeModal()" class="btn-ghost">Cancel</button>
+      <button onclick="submitPayment()" class="btn-primary" id="pay-btn">Pay Now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentJobId = null;
+
+function openPaymentModal(id, fee) {
+  currentJobId = id;
+  document.getElementById('pay-btn').textContent = 'Pay ' + fee + ' KES';
+  document.getElementById('payment-modal').style.display = 'flex';
+  document.getElementById('mpesa-phone').focus();
+}
+
+function closeModal() {
+  document.getElementById('payment-modal').style.display = 'none';
+}
+
+async function submitPayment() {
+  const phone = document.getElementById('mpesa-phone').value.trim();
+  if (!phone) { alert('Enter your M-Pesa number'); return; }
+  const btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const res = await fetch('/pay/' + currentJobId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'phone=' + encodeURIComponent(phone),
+    });
+    const data = await res.json();
+    alert(data.message || data.detail || 'Check your phone for the M-Pesa prompt');
+    closeModal();
+  } catch (e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Pay Now';
+  }
+}
+</script>
+
+{% endblock %}

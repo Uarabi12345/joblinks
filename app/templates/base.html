@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobLinks — Earn From Your Phone</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/" class="brand">💼 JobLinks</a>
+    <span class="nav-right">
+      {% if user %}
+        {% if not user.is_admin %}
+          <a href="/profile" style="font-weight: bold; color: #6366f1;">My Profile</a>
+        {% endif %}
+        <span class="nav-user">{{ user.email }}</span>
+        {% if user.is_admin %}<a href="/admin">Admin</a>{% endif %}
+        <a href="/logout" class="nav-btn">Logout</a>
+      {% else %}
+        <a href="/login">Login</a>
+        <a href="/register" class="nav-btn">Get Started</a>
+      {% endif %}
+    </span>
+  </nav>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  
+  <!-- FLOATING WHATSAPP BUTTON -->
+  <a href="https://wa.me/254700000000" class="whatsapp-float" target="_blank" title="Chat with Support">
+    <svg viewBox="0 0 32 32" width="35" height="35" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 0c-8.837 0-16 7.163-16 16 0 2.825.736 5.487 2.025 7.8l-2.025 7.4 7.575-2.025c2.263 1.237 4.85 1.95 7.625 1.95 8.837 0 16-7.163 16-16s-7.163-16-16-16z" fill="#25D366"></path>
+      <path d="M23.375 19.525c-.313-.163-1.85-.912-2.138-1.013-.288-.1-.5-.163-.713.163-.212.288-.825 1.013-1.013 1.225-.188.213-.375.238-.688.075-1.575-.788-2.625-1.4-3.65-3.175-.275-.475.275-.45.788-1.5.088-.175.038-.338-.025-.475-.063-.138-.713-1.713-.975-2.35-.263-.638-.538-.55-.738-.55-.188 0-.4-.025-.613-.025s-.563.075-.863.4c-.3.325-1.138 1.113-1.138 2.7s1.163 3.125 1.325 3.338c.163.213 2.288 3.5 5.55 4.9 2.075.888 2.888.963 3.925.813 1.05-.15 3.225-1.313 3.675-2.588.45-1.275.45-2.375.313-2.588-.138-.213-.513-.338-.825-.5z" fill="#FFF"></path>
+    </svg>
+  </a>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>Welcome Back</h2>
+      <p>Log in to access your dashboard</p>
+    </div>
+    
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    
+    <form method="post" action="/login">
+      <label>Email</label>
+      <input name="email" type="email" required placeholder="you@example.com">
+
+      <label>Password</label>
+      <input name="password" type="password" required placeholder="••••••••">
+
+      <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Login</button>
+    </form>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;">
+      <a href="/forgot-password" style="color: #6366f1; font-weight: bold; text-decoration: none;">Forgot password?</a>
+      <span style="color: #64748b;">New? <a href="/register" style="color: #6366f1; font-weight: bold; text-decoration: none;">Register</a></span>
+    </div>
+  </div>
+</div>
+{% endblock %}
