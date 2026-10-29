@@ -111,12 +111,19 @@ def verify_account(request: Request, email: str = Form(...), code: str = Form(..
     user.verification_code = None
     db.commit()
     
+    # --- AUTOMATIC WELCOME EMAIL ---
     welcome_subject = "Welcome to JobLinks! 🚀"
     welcome_body = f"""Hi there,
 
 Welcome to JobLinks! Your account is now fully verified and ready to go.
 
 You can now browse available jobs on your dashboard, pay the small unlock fee, and start earning real money from your phone today.
+
+Here's how to get started:
+1. Log in to your dashboard.
+2. Browse the available jobs.
+3. Unlock a job to get the client's contact link.
+4. Chat with the client and get paid!
 
 Best regards,
 The JobLinks Team
@@ -295,12 +302,10 @@ def admin_panel(request: Request, db: Session = Depends(get_db)):
     current_batch = get_current_batch(db)
     links = db.query(JobLink).filter(JobLink.batch_id == current_batch).order_by(JobLink.id.desc()).all()
     pending_payments = db.query(Payment).filter(Payment.status == "pending", Payment.payment_type.like("manual%")).order_by(Payment.id.desc()).all()
-    
     workers = db.query(User).filter(User.is_admin == False).order_by(User.id.desc()).all()
-    admins = db.query(User).filter(User.is_admin == True).order_by(User.id.desc()).all()
     
     return templates.TemplateResponse("admin.html", {
-        "request": request, "user": user, "links": links, "pending_payments": pending_payments, "current_batch": current_batch, "workers": workers, "admins": admins
+        "request": request, "user": user, "links": links, "pending_payments": pending_payments, "current_batch": current_batch, "workers": workers
     })
 
 @router.post("/admin/add")
@@ -387,22 +392,34 @@ def admin_approve_payment(request: Request, payment_id: int, db: Session = Depen
         db.commit()
     return RedirectResponse("/admin", status_code=302)
 
-@router.post("/admin/promote/{user_id}")
-def admin_promote(request: Request, user_id: int, db: Session = Depends(get_db)):
+@router.post("/admin/archive")
+def admin_archive(request: Request, db: Session = Depends(get_db)):
+    user = current_user(request, db)
+    if not user or not user.is_admin: raise HTTPException(403, "Admin only")
+    config = db.query(SystemConfig).first()
+    if config:
+        config.current_batch += 1
+        db.commit()
+    return RedirectResponse("/admin", status_code=302)
+
+@router.post("/admin/make-admin/{user_id}")
+def admin_make_admin(request: Request, user_id: int, db: Session = Depends(get_db)):
     user = current_user(request, db)
     if not user or not user.is_admin: raise HTTPException(403, "Admin only")
     
     target_user = db.query(User).filter(User.id == user_id).first()
-    if target_user:
-        target_user.is_admin = True
-        db.commit()
+    if not target_user:
+        raise HTTPException(404, "User not found")
+        
+    target_user.is_admin = True
+    db.commit()
     return RedirectResponse("/admin", status_code=302)
 
 @router.post("/admin/demote/{user_id}")
 def admin_demote(request: Request, user_id: int, db: Session = Depends(get_db)):
     user = current_user(request, db)
     if not user or not user.is_admin: raise HTTPException(403, "Admin only")
-    
+
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(404, "User not found")
@@ -414,17 +431,7 @@ def admin_demote(request: Request, user_id: int, db: Session = Depends(get_db)):
     total_admins = db.query(User).filter(User.is_admin == True).count()
     if total_admins <= 1 and user.id == user_id:
         raise HTTPException(400, "You cannot demote yourself if you are the only admin.")
-        
+
     target_user.is_admin = False
     db.commit()
-    return RedirectResponse("/admin", status_code=302)
-
-@router.post("/admin/archive")
-def admin_archive(request: Request, db: Session = Depends(get_db)):
-    user = current_user(request, db)
-    if not user or not user.is_admin: raise HTTPException(403, "Admin only")
-    config = db.query(SystemConfig).first()
-    if config:
-        config.current_batch += 1
-        db.commit()
     return RedirectResponse("/admin", status_code=302)
