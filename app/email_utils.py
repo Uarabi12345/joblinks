@@ -1,43 +1,34 @@
+import smtplib
 import os
-import requests
+from email.message import EmailMessage
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# We now use Brevo's API instead of SMTP to bypass Render's firewall
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-FROM_EMAIL = os.getenv("SMTP_EMAIL") # This will be your Brevo sender email
-FROM_NAME = "JobLinks"
+SMTP_EMAIL = os.getenv("SMTP_EMAIL")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 
 def send_email(to_email: str, subject: str, body: str):
-    if not BREVO_API_KEY or not FROM_EMAIL:
-        print("⚠️ EMAIL NOT SENT: Brevo API key or sender email missing in .env")
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print("⚠️ EMAIL NOT SENT: SMTP credentials missing in .env")
         return False
 
-    url = "https://api.brevo.com/v3/smtp/email"
-    headers = {
-        "accept": "application/json",
-        "api-key": BREVO_API_KEY,
-        "content-type": "application/json"
-    }
-    
-    # We format the text body into basic HTML so it looks nice in the email
-    html_body = f"<html><body><p>{body.replace(chr(10), '<br>')}</p></body></html>"
-    
-    payload = {
-        "sender": {"name": FROM_NAME, "email": FROM_EMAIL},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html_body
-    }
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg['Subject'] = subject
+    msg['From'] = f"JobLinks <{SMTP_EMAIL}>"
+    msg['To'] = to_email
 
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status() 
-        print(f"✅ Email sent to {to_email} via Brevo API")
+        # Added timeout=10 so the server doesn't hang forever if Brevo is blocked
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
+        print(f"✅ Email sent to {to_email}")
         return True
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"❌ Failed to send email: {e}")
-        if response.text:
-            print(f"Error details: {response.text}")
         return False

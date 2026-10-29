@@ -21,7 +21,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+BASE_URL = os.getenv("BASE_URL", "https://joblinks-2.onrender.com")
 
 def get_current_batch(db: Session) -> int:
     config = db.query(SystemConfig).first()
@@ -94,7 +94,12 @@ def register(request: Request, email: str = Form(...), password: str = Form(...)
     db.add(new_user)
     db.commit()
     
-    send_email(email, "Verify Your JobLinks Account", f"Welcome to JobLinks!\n\nYour 6-digit verification code is: {code}")
+    # BULLETPROOF EMAIL SENDING: If it fails, catch the error and print it, but don't crash the site.
+    try:
+        send_email(email, "Verify Your JobLinks Account", f"Welcome to JobLinks!\n\nYour 6-digit verification code is: {code}")
+    except Exception as e:
+        print(f"❌ Failed to send email to {email}: {e}")
+        
     return RedirectResponse(f"/verify?email={email}", status_code=302)
 
 @router.get("/verify", response_class=HTMLResponse)
@@ -114,7 +119,11 @@ def verify_account(request: Request, email: str = Form(...), code: str = Form(..
     
     welcome_subject = "Welcome to JobLinks! 🚀"
     welcome_body = f"Hi there,\n\nWelcome to JobLinks! Your account is now fully verified and ready to go.\n\nYou can now browse available jobs on your dashboard, pay the small unlock fee, and start earning real money from your phone today.\n\nBest regards,\nThe JobLinks Team\n\nGo to your dashboard here: {BASE_URL}"
-    send_email(email, welcome_subject, welcome_body)
+    
+    try:
+        send_email(email, welcome_subject, welcome_body)
+    except Exception as e:
+        print(f"❌ Failed to send welcome email: {e}")
 
     token = create_token(user.email)
     response = RedirectResponse("/", status_code=302)
@@ -160,7 +169,12 @@ def forgot_password(request: Request, email: str = Form(...), db: Session = Depe
     code = generate_code()
     user.reset_code = code
     db.commit()
-    send_email(email, "Reset Your JobLinks Password", f"Your reset code is: {code}")
+    
+    try:
+        send_email(email, "Reset Your JobLinks Password", f"Your reset code is: {code}")
+    except Exception as e:
+        print(f"❌ Failed to send reset email: {e}")
+        
     return RedirectResponse(f"/reset-password?email={email}", status_code=302)
 
 @router.get("/reset-password", response_class=HTMLResponse)
