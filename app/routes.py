@@ -356,9 +356,18 @@ def admin_delete(request: Request, link_id: int, db: Session = Depends(get_db)):
 def admin_delete_user(request: Request, user_id: int, db: Session = Depends(get_db)):
     user = current_user(request, db)
     if not user or not user.is_admin: raise HTTPException(403, "Admin only")
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(404, "User not found")
+        
+    # PROTECT MAIN ADMIN
+    if target_user.email == ADMIN_EMAIL:
+        raise HTTPException(400, "The primary admin account cannot be deleted.")
+        
     db.query(Payment).filter(Payment.user_id == user_id).delete()
     db.query(JobLink).filter(JobLink.taken_by == user_id).update({"status": "available", "taken_by": None})
-    db.query(User).filter(User.id == user_id, User.is_admin == False).delete()
+    db.query(User).filter(User.id == user_id).delete()
     db.commit()
     return RedirectResponse("/admin", status_code=302)
 
@@ -394,14 +403,20 @@ def admin_demote(request: Request, user_id: int, db: Session = Depends(get_db)):
     user = current_user(request, db)
     if not user or not user.is_admin: raise HTTPException(403, "Admin only")
     
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(404, "User not found")
+        
+    # PROTECT MAIN ADMIN
+    if target_user.email == ADMIN_EMAIL:
+        raise HTTPException(400, "The primary admin account cannot be demoted.")
+        
     total_admins = db.query(User).filter(User.is_admin == True).count()
     if total_admins <= 1 and user.id == user_id:
         raise HTTPException(400, "You cannot demote yourself if you are the only admin.")
         
-    target_user = db.query(User).filter(User.id == user_id).first()
-    if target_user:
-        target_user.is_admin = False
-        db.commit()
+    target_user.is_admin = False
+    db.commit()
     return RedirectResponse("/admin", status_code=302)
 
 @router.post("/admin/archive")
