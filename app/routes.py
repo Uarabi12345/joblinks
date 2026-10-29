@@ -5,7 +5,7 @@ import shutil
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, File, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -85,7 +85,7 @@ def register_form(request: Request):
     return templates.TemplateResponse("register.html", {"request": request, "user": None, "error": None})
 
 @router.post("/register")
-def register(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+def register(request: Request, background_tasks: BackgroundTasks, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == email).first():
         return templates.TemplateResponse("register.html", {"request": request, "user": None, "error": "Email already exists"})
         
@@ -94,11 +94,13 @@ def register(request: Request, email: str = Form(...), password: str = Form(...)
     db.add(new_user)
     db.commit()
     
-    # BULLETPROOF EMAIL SENDING: If it fails, catch the error and print it, but don't crash the site.
-    try:
-        send_email(email, "Verify Your JobLinks Account", f"Welcome to JobLinks!\n\nYour 6-digit verification code is: {code}")
-    except Exception as e:
-        print(f"❌ Failed to send email to {email}: {e}")
+    # Email is sent in the background so the page redirects instantly
+    background_tasks.add_task(
+        send_email, 
+        email, 
+        "Verify Your JobLinks Account", 
+        f"Welcome to JobLinks!\n\nYour 6-digit verification code is: {code}"
+    )
         
     return RedirectResponse(f"/verify?email={email}", status_code=302)
 
@@ -107,7 +109,7 @@ def verify_form(request: Request, email: str):
     return templates.TemplateResponse("verify.html", {"request": request, "user": None, "email": email, "error": None})
 
 @router.post("/verify")
-def verify_account(request: Request, email: str = Form(...), code: str = Form(...), db: Session = Depends(get_db)):
+def verify_account(request: Request, background_tasks: BackgroundTasks, email: str = Form(...), code: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user: return RedirectResponse("/login", status_code=302)
     if user.verification_code != code:
@@ -120,10 +122,8 @@ def verify_account(request: Request, email: str = Form(...), code: str = Form(..
     welcome_subject = "Welcome to JobLinks! 🚀"
     welcome_body = f"Hi there,\n\nWelcome to JobLinks! Your account is now fully verified and ready to go.\n\nYou can now browse available jobs on your dashboard, pay the small unlock fee, and start earning real money from your phone today.\n\nBest regards,\nThe JobLinks Team\n\nGo to your dashboard here: {BASE_URL}"
     
-    try:
-        send_email(email, welcome_subject, welcome_body)
-    except Exception as e:
-        print(f"❌ Failed to send welcome email: {e}")
+    # Welcome email sent in the background
+    background_tasks.add_task(send_email, email, welcome_subject, welcome_body)
 
     token = create_token(user.email)
     response = RedirectResponse("/", status_code=302)
@@ -161,7 +161,7 @@ def forgot_password_form(request: Request):
     return templates.TemplateResponse("forgot_password.html", {"request": request, "user": None, "error": None})
 
 @router.post("/forgot-password")
-def forgot_password(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+def forgot_password(request: Request, background_tasks: BackgroundTasks, email: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return templates.TemplateResponse("forgot_password.html", {"request": request, "user": None, "error": "Email not found."})
@@ -170,10 +170,7 @@ def forgot_password(request: Request, email: str = Form(...), db: Session = Depe
     user.reset_code = code
     db.commit()
     
-    try:
-        send_email(email, "Reset Your JobLinks Password", f"Your reset code is: {code}")
-    except Exception as e:
-        print(f"❌ Failed to send reset email: {e}")
+    background_tasks.add_task(send_email, email, "Reset Your JobLinks Password", f"Your reset code is: {code}")
         
     return RedirectResponse(f"/reset-password?email={email}", status_code=302)
 

@@ -22,7 +22,7 @@ def send_email(to_email: str, subject: str, body: str):
     msg['To'] = to_email
 
     try:
-        # Added timeout=10 so the server doesn't hang forever if Brevo is blocked
+        # timeout=10 prevents the server from hanging if Brevo is slow or blocked
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
             server.starttls()
             server.login(SMTP_EMAIL, SMTP_PASSWORD)
