@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 import os
 
@@ -16,13 +15,8 @@ if DATABASE_URL.startswith("postgres://"):
 if "sqlite" in DATABASE_URL:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    # For PostgreSQL on Render, use NullPool to avoid dead SSL connections.
-    # We also force SSL mode to 'require' to ensure a clean handshake.
-    engine = create_engine(
-        DATABASE_URL,
-        poolclass=NullPool,
-        connect_args={"sslmode": "require"}
-    )
+    # pool_pre_ping=True automatically checks and reconnects dead connections
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
