@@ -105,6 +105,34 @@
     </div>
   </div>
 
+  <!-- ADMINISTRATORS -->
+  <div class="card" style="margin-bottom: 30px; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0;">👑 Administrators ({{ admins|length }})</h3>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Users with full access to the Command Center.</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% for admin in admins %}
+        <div style="background: #fef3c7; padding: 15px; border-radius: 10px; border: 1px solid #fde68a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong>{{ admin.email }}</strong>
+            {% if admin.id == user.id %}<span style="font-size: 12px; color: #92400e; font-weight: bold;">(You)</span>{% endif %}
+          </div>
+          <div style="display: flex; gap: 10px;">
+            {% if admin.id != user.id %}
+              <form method="post" action="/admin/demote/{{ admin.id }}" onsubmit="return confirm('Remove admin privileges from this user?')">
+                <button type="submit" style="background: #f59e0b; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Demote to Worker</button>
+              </form>
+            {% endif %}
+            {% if admin.id != user.id %}
+              <form method="post" action="/admin/delete-user/{{ admin.id }}" onsubmit="return confirm('Permanently delete this admin?')">
+                <button type="submit" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Remove</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- REGISTERED WORKERS -->
   <div class="card" style="margin-bottom: 30px; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
     <h3 style="margin-top: 0;">👥 Registered Workers ({{ workers|length }})</h3>
@@ -114,9 +142,14 @@
           <div>
             <strong>{{ w.email }}</strong>
           </div>
-          <form method="post" action="/admin/delete-user/{{ w.id }}" onsubmit="return confirm('Delete this user?')">
-            <button type="submit" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Remove</button>
-          </form>
+          <div style="display: flex; gap: 10px;">
+            <form method="post" action="/admin/promote/{{ w.id }}" onsubmit="return confirm('Promote this user to Admin?')">
+              <button type="submit" style="background: #6366f1; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Make Admin</button>
+            </form>
+            <form method="post" action="/admin/delete-user/{{ w.id }}" onsubmit="return confirm('Delete this user?')">
+              <button type="submit" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">Remove</button>
+            </form>
+          </div>
         </div>
       {% else %}
         <p style="color: #64748b; text-align: center; padding: 20px;">No workers registered yet.</p>
