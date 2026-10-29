@@ -21,6 +21,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 def get_current_batch(db: Session) -> int:
     config = db.query(SystemConfig).first()
@@ -112,7 +113,7 @@ def verify_account(request: Request, email: str = Form(...), code: str = Form(..
     db.commit()
     
     welcome_subject = "Welcome to JobLinks! 🚀"
-    welcome_body = f"Hi there,\n\nWelcome to JobLinks! Your account is now fully verified and ready to go.\n\nYou can now browse available jobs on your dashboard, pay the small unlock fee, and start earning real money from your phone today.\n\nBest regards,\nThe JobLinks Team"
+    welcome_body = f"Hi there,\n\nWelcome to JobLinks! Your account is now fully verified and ready to go.\n\nYou can now browse available jobs on your dashboard, pay the small unlock fee, and start earning real money from your phone today.\n\nBest regards,\nThe JobLinks Team\n\nGo to your dashboard here: {BASE_URL}"
     send_email(email, welcome_subject, welcome_body)
 
     token = create_token(user.email)
