@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine
 from app import routes
 
-# This is safe. It creates tables only if they don't exist.
+# Safe creation. Will not wipe data on restart.
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="JobLinks")
